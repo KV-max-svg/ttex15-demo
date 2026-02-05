@@ -184,7 +184,7 @@
     const FOAMS = {
       "TTEX15": {
         title: "TTEX15 – General Tool Set FOAM4X4 (15 delar)",
-        image: "ttex15.png",
+        image: "TTEPS15_foam_only_demo.png",
         tools: [
           { name:"Engineers Hammer", spec:"800 g", artNo:"HMEG800", isTorqueWrench:false, box:{l:5,  t:5,  w:20, h:18} },
           { name:"Combination Plier HD", spec:"200 mm, TPR", artNo:"MB452-8T", isTorqueWrench:false, box:{l:28, t:5,  w:20, h:18} },
