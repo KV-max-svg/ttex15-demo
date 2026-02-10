@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tool Control Demo – TTEX15</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; margin: 0; background:#f6f6f6; }
+    header { background:#111; color:#fff; padding:16px 18px; }
+    header h1 { margin:0; font-size:18px; font-weight:700; }
+    header p { margin:6px 0 0; font-size:13px; opacity:.85; }
+    main { max-width: 1080px; margin: 0 auto; padding: 16px; }
+    .card { background:#fff; border-radius:10px; padding:14px; box-shadow:0 2px 12px rgba(0,0,0,.06); }
+    .row { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-start; }
+    .col { flex: 1 1 380px; }
+    .btn { display:inline-block; border:0; background:#111; color:#fff; padding:10px 12px; border-radius:8px; cursor:pointer; font-size:14px; }
+    .btn.secondary { background:#444; }
+    .btn.danger { background:#8b0000; }
+    .muted { color:#666; font-size:13px; line-height:1.35; }
+    .stage { position:relative; width:100%; }
+    .stage img { width:100%; height:auto; border-radius:10px; display:block; }
+    .hotspot {
+      position:absolute; border:2px solid rgba(255,0,0,.55);
+      background: rgba(255,0,0,.08);
+      border-radius:10px; cursor:pointer;
+    }
+    .hotspot:hover { border-color: rgba(255,0,0,.85); background: rgba(255,0,0,.12); }
+
+    .pill { display:inline-block; font-size:12px; padding:4px 8px; border-radius:999px; background:#eee; color:#333; }
+    .kpi { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+    .hr { height:1px; background:#eee; margin:12px 0; }
+
+    table { width:100%; border-collapse: collapse; }
+    th, td { text-align:left; padding:10px 8px; border-bottom:1px solid #eee; font-size:14px; vertical-align:top; }
+    th { font-size:12px; color:#555; text-transform:uppercase; letter-spacing:.02em; }
+    .qtySel { width:72px; padding:8px; border-radius:8px; border:1px solid #ccc; }
+    .small { font-size:12px; color:#555; }
+    .right { text-align:right; }
+
+    input, textarea {
+      width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:14px;
+    }
+    textarea { min-height: 120px; }
+
+    .warn { background:#fff7e6; border:1px solid #ffd08a; color:#5a3b00; padding:10px; border-radius:10px; font-size:13px; }
+    .ok { background:#e9fff0; border:1px solid #9be2b2; color:#0f3d1f; padding:10px; border-radius:10px; font-size:13px; }
+    .hidden { display:none !important; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>TengTools Tool Control – Demo</h1>
+    <p>Scan QR → Visa foam → Klicka saknade verktyg → Bygg beställningslista → Skicka underlag</p>
+  </header>
+
+  <main>
+    <div class="row">
+      <div class="col">
+        <div class="card">
+          <strong>Start</strong>
+          <div class="kpi">
+            <span class="pill">Foam: <span id="foamIdLabel">–</span></span>
+            <span class="pill">Läge: <span id="modeLabel">–</span></span>
+            <span class="pill">Rader i beställning: <span id="cartCount">0</span></span>
+          </div>
+
+          <div class="hr"></div>
+
+          <p class="muted">
+            QR-kod kan peka på: <code>?foam=TTEX15</code>.<br>
+            Demo utan QR: klicka “Öppna TTEX15 (demo)”.
+          </p>
+
+          <button class="btn" id="demoBtn">Öppna TTEX15 (demo)</button>
+          <button class="btn secondary" id="resetBtn">Återställ</button>
+
+          <div class="hr"></div>
+
+          <div id="statusBox" class="warn">
+            Ingen foam vald ännu.
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="card">
+          <strong>Foam-bild</strong>
+          <p class="muted">
+            Lägg in officiell bild som <code>ttex15.png</code> i samma mapp. Justera hotspots i koden vid behov.
+          </p>
+
+          <div class="stage" id="stage" style="display:none;">
+            <img id="foamImg" src="" alt="Foam image" />
+          </div>
+
+          <div id="emptyState" class="muted">
+            Ingen foam vald ännu.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:14px;"></div>
+
+    <div class="row">
+      <div class="col" style="flex: 2 1 720px;">
+        <div class="card">
+          <strong>Beställningslista</strong>
+          <p class="muted">
+            Klicka på saknade verktyg i foamen för att lägga till dem här. Antal per rad 1–10.
+          </p>
+
+          <div class="hr"></div>
+
+          <div style="overflow:auto;">
+            <table id="cartTable">
+              <thead>
+                <tr>
+                  <th>Artikelnummer</th>
+                  <th>Benämning</th>
+                  <th>Antal</th>
+                  <th class="right">Åtgärd</th>
+                </tr>
+              </thead>
+              <tbody id="cartBody">
+                <tr><td colspan="4" class="muted">Inga rader ännu.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="kpi">
+            <span class="pill">Summa rader: <strong id="sumLines">0</strong></span>
+            <span class="pill">Summa antal: <strong id="sumQty">0</strong></span>
+          </div>
+
+          <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+            <button class="btn secondary" id="clearCartBtn">Rensa lista</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col" style="flex: 1 1 360px;">
+        <div class="card">
+          <strong>Skicka beställningsunderlag</strong>
+
+          <div class="hr"></div>
+
+          <label class="small" for="email">E-postmottagare</label>
+          <input id="email" type="email" placeholder="inkop@kund.se" />
+
+          <div id="calibrationBlock" class="hidden" style="margin-top:10px;">
+            <label class="small" for="calDate">Datum för kontroll (momentnyckel)</label>
+            <input id="calDate" type="date" />
+            <div class="muted" style="margin-top:6px;">
+              Visas endast om beställningen innehåller momentnyckel.
+            </div>
+          </div>
+
+          <div style="margin-top:10px;">
+            <label class="small" for="orderText">Beställningsunderlag (förhandsvisning)</label>
+            <textarea id="orderText" readonly></textarea>
+          </div>
+
+          <div id="sendHint" class="warn" style="margin-top:10px;">
+            Lägg till minst ett verktyg för att kunna skicka.
+          </div>
+
+          <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+            <button class="btn secondary" id="copyBtn">Kopiera</button>
+            <button class="btn" id="mailBtn">Skicka e-post</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // =========================================================
+    // DATA: TTEX15 (15 delar) – artikelnummer enligt din lista
+    // Stöd för torque wrench: sätt tool.isTorqueWrench = true
+    // =========================================================
+    const FOAMS = {
+      "TTEX15": {
+        title: "TTEX15 – General Tool Set FOAM4X4 (15 delar)",
+        image: "../TTEPS15_foam_only_demo.png",
+        tools: [
+          { name:"Engineers Hammer", spec:"800 g", artNo:"HMEG800", isTorqueWrench:false, box:{l:5,  t:5,  w:20, h:18} },
+          { name:"Combination Plier HD", spec:"200 mm, TPR", artNo:"MB452-8T", isTorqueWrench:false, box:{l:28, t:5,  w:20, h:18} },
+
+          { name:"Parallel Pin Punch", spec:"3 mm", artNo:"PP03", isTorqueWrench:false, box:{l:5,  t:27, w:10, h:10} },
+          { name:"Parallel Pin Punch", spec:"4 mm", artNo:"PP04", isTorqueWrench:false, box:{l:16, t:27, w:10, h:10} },
+          { name:"Parallel Pin Punch", spec:"5 mm", artNo:"PP05", isTorqueWrench:false, box:{l:27, t:27, w:10, h:10} },
+          { name:"Parallel Pin Punch", spec:"6 mm", artNo:"PP06", isTorqueWrench:false, box:{l:38, t:27, w:10, h:10} },
+          { name:"Parallel Pin Punch", spec:"7 mm", artNo:"PP07", isTorqueWrench:false, box:{l:49, t:27, w:10, h:10} },
+          { name:"Parallel Pin Punch", spec:"8 mm", artNo:"PP08", isTorqueWrench:false, box:{l:60, t:27, w:10, h:10} },
+
+          { name:"Measuring Tape", spec:"3 m", artNo:"MT03", isTorqueWrench:false, box:{l:72, t:27, w:20, h:10} },
+
+          { name:"Hacksaw", spec:"24 TPI", artNo:"700-PRO5", isTorqueWrench:false, box:{l:5,  t:40, w:35, h:18} },
+          { name:"Water Pump Pliers", spec:"250 mm, TPR", artNo:"MB481-10T", isTorqueWrench:false, box:{l:42, t:40, w:25, h:18} },
+
+          { name:"Side Cutter HD", spec:"200 mm, TPR", artNo:"MB442-8T", isTorqueWrench:false, box:{l:69, t:40, w:24, h:18} },
+
+          { name:"Long Nose Plier", spec:"205 mm, TPR", artNo:"MB461-8T", isTorqueWrench:false, box:{l:5,  t:60, w:30, h:18} },
+          { name:"Flat Cold Chisel", spec:"250 × 25 mm", artNo:"CC250F", isTorqueWrench:false, box:{l:37, t:60, w:30, h:18} },
+          { name:"Folding Utility Knife", spec:"Utility knife", artNo:"710", isTorqueWrench:false, box:{l:69, t:60, w:24, h:18} },
+        ]
+      }
+    };
+
+    // =========================================================
+    // STATE
+    // cart: { [artNo]: { artNo, name, spec, qty, isTorqueWrench } }
+    // =========================================================
+    let currentFoamId = null;
+    let cart = {};
+
+    // =========================================================
+    // HELPERS
+    // =========================================================
+    const qs = (s) => document.querySelector(s);
+    function getParam(name) {
+      const url = new URL(window.location.href);
+      return url.searchParams.get(name);
+    }
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    // =========================================================
+    // UI refs
+    // =========================================================
+    const stage = qs("#stage");
+    const foamImg = qs("#foamImg");
+    const emptyState = qs("#emptyState");
+
+    const foamIdLabel = qs("#foamIdLabel");
+    const modeLabel = qs("#modeLabel");
+
+    const cartCount = qs("#cartCount");
+    const cartBody = qs("#cartBody");
+    const sumLines = qs("#sumLines");
+    const sumQty = qs("#sumQty");
+
+    const statusBox = qs("#statusBox");
+
+    const email = qs("#email");
+    const calBlock = qs("#calibrationBlock");
+    const calDate = qs("#calDate");
+    const orderText = qs("#orderText");
+    const sendHint = qs("#sendHint");
+
+    // =========================================================
+    // CORE
+    // =========================================================
+    function setMode(label) { modeLabel.textContent = label; }
+
+    function resetUI() {
+      currentFoamId = null;
+      cart = {};
+      foamIdLabel.textContent = "–";
+      setMode("–");
+      stage.style.display = "none";
+      emptyState.style.display = "block";
+      statusBox.className = "warn";
+      statusBox.textContent = "Ingen foam vald ännu.";
+      renderCart();
+    }
+
+    function setFoam(foamId, mode) {
+      const foam = FOAMS[foamId];
+      if (!foam) { resetUI(); return; }
+
+      currentFoamId = foamId;
+      foamIdLabel.textContent = foamId;
+      setMode(mode);
+
+      // show image
+      foamImg.src = foam.image;
+      stage.style.display = "block";
+      emptyState.style.display = "none";
+
+      // status
+      statusBox.className = "ok";
+      statusBox.textContent = foam.title;
+
+      // remove hotspots
+      stage.querySelectorAll(".hotspot").forEach(n => n.remove());
+
+      // create hotspots
+      foam.tools.forEach(tool => {
+        const hs = document.createElement("div");
+        hs.className = "hotspot";
+        hs.style.left = tool.box.l + "%";
+        hs.style.top = tool.box.t + "%";
+        hs.style.width = tool.box.w + "%";
+        hs.style.height = tool.box.h + "%";
+        hs.title = tool.artNo + " – " + tool.name;
+        hs.addEventListener("click", () => addToCart(tool));
+        stage.appendChild(hs);
+      });
+
+      renderCart();
+    }
+
+    function addToCart(tool) {
+      if (!currentFoamId) return;
+      const artNo = tool.artNo;
+
+      if (cart[artNo]) {
+        cart[artNo].qty = Math.min(10, cart[artNo].qty + 1);
+      } else {
+        cart[artNo] = {
+          artNo,
+          name: tool.name,
+          spec: tool.spec || "",
+          qty: 1,
+          isTorqueWrench: !!tool.isTorqueWrench
+        };
+      }
+      renderCart();
+    }
+
+    function removeFromCart(artNo) {
+      delete cart[artNo];
+      renderCart();
+    }
+
+    function clearCart() {
+      cart = {};
+      renderCart();
+    }
+
+    function cartItems() {
+      return Object.values(cart).sort((a,b) => a.artNo.localeCompare(b.artNo));
+    }
+
+    function containsTorqueWrench() {
+      return cartItems().some(i => i.isTorqueWrench);
+    }
+
+    function buildOrderText() {
+      const items = cartItems();
+      const lines = [];
+      lines.push("BESTÄLLNINGSUNDERLAG (demo)");
+      lines.push("Foam: " + (currentFoamId || "–"));
+      lines.push("Datum: " + new Date().toISOString().slice(0,10));
+      lines.push("");
+
+      if (containsTorqueWrench()) {
+        const d = (calDate.value || "").trim();
+        lines.push("Datum för kontroll (momentnyckel): " + (d ? d : "SAKNAS"));
+        lines.push("");
+      }
+
+      lines.push("Rader:");
+      items.forEach(i => {
+        const desc = i.spec ? ` (${i.spec})` : "";
+        lines.push(`- ${i.artNo} – ${i.name}${desc} – Antal: ${i.qty} st`);
+      });
+
+      lines.push("");
+      lines.push("Kommentar: (kundreferens / arbetsplats / plats i vagn)");
+      return lines.join("\n");
+    }
+
+    function renderCart() {
+      const items = cartItems();
+
+      cartCount.textContent = String(items.length);
+
+      // sums
+      const totalQty = items.reduce((s,i) => s + (i.qty || 0), 0);
+      sumLines.textContent = String(items.length);
+      sumQty.textContent = String(totalQty);
+
+      // calibration block toggle
+      const needsCal = containsTorqueWrench();
+      calBlock.classList.toggle("hidden", !needsCal);
+
+      // if torque wrench removed, clear date to avoid confusion (optional)
+      if (!needsCal) calDate.value = "";
+
+      // table
+      if (items.length === 0) {
+        cartBody.innerHTML = `<tr><td colspan="4" class="muted">Inga rader ännu.</td></tr>`;
+        sendHint.className = "warn";
+        sendHint.textContent = "Lägg till minst ett verktyg för att kunna skicka.";
+      } else {
+        cartBody.innerHTML = items.map(i => {
+          const specLine = i.spec ? `<div class="small">${esc(i.spec)}</div>` : "";
+          const torqueTag = i.isTorqueWrench ? `<div class="small"><span class="pill">Momentnyckel</span></div>` : "";
+          return `
+            <tr>
+              <td><strong>${esc(i.artNo)}</strong></td>
+              <td>
+                ${esc(i.name)}
+                ${specLine}
+                ${torqueTag}
+              </td>
+              <td>
+                <select class="qtySel" data-artno="${esc(i.artNo)}">
+                  ${[1,2,3,4,5,6,7,8,9,10].map(n => `<option ${n===i.qty?'selected':''}>${n}</option>`).join("")}
+                </select>
+              </td>
+              <td class="right">
+                <button class="btn danger" data-remove="${esc(i.artNo)}">Ta bort</button>
+              </td>
+            </tr>
+          `;
+        }).join("");
+
+        sendHint.className = "ok";
+        sendHint.textContent = "Beställningsunderlag klart. Kopiera eller skicka e-post.";
+      }
+
+      // attach listeners for qty + remove
+      cartBody.querySelectorAll("select.qtySel").forEach(sel => {
+        sel.addEventListener("change", (e) => {
+          const artNo = e.target.getAttribute("data-artno");
+          const v = parseInt(e.target.value, 10);
+          if (cart[artNo]) cart[artNo].qty = v;
+          refreshOrderPreview();
+        });
+      });
+
+      cartBody.querySelectorAll("button[data-remove]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const artNo = btn.getAttribute("data-remove");
+          removeFromCart(artNo);
+        });
+      });
+
+      refreshOrderPreview();
+    }
+
+    function refreshOrderPreview() {
+      orderText.value = buildOrderText();
+    }
+
+    // =========================================================
+    // ACTIONS
+    // =========================================================
+    qs("#demoBtn").addEventListener("click", () => setFoam("TTEX15", "Demo-läge"));
+
+    qs("#resetBtn").addEventListener("click", () => {
+      history.replaceState(null, "", window.location.pathname);
+      resetUI();
+    });
+
+    qs("#clearCartBtn").addEventListener("click", () => clearCart());
+
+    qs("#copyBtn").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(orderText.value);
+      } catch (e) {
+        orderText.select();
+        document.execCommand("copy");
+      }
+    });
+
+    calDate.addEventListener("change", () => refreshOrderPreview());
+
+    qs("#mailBtn").addEventListener("click", () => {
+      const items = cartItems();
+      if (!items.length) return;
+
+      // If torque wrench present, require date
+      if (containsTorqueWrench()) {
+        const d = (calDate.value || "").trim();
+        if (!d) {
+          sendHint.className = "warn";
+          sendHint.textContent = "Datum för kontroll krävs när beställningen innehåller momentnyckel.";
+          return;
+        }
+      }
+
+      const to = (email.value || "").trim();
+      const subject = encodeURIComponent(`Beställning (demo) – Foam ${currentFoamId || ""}`);
+      const body = encodeURIComponent(orderText.value);
+      const link = `mailto:${encodeURIComponent(to)}?subject=${subject}&body=${body}`;
+      window.location.href = link;
+    });
+
+    // =========================================================
+    // Auto-start via QR
+    // =========================================================
+    const foamParam = getParam("foam");
+    if (foamParam && FOAMS[foamParam]) {
+      setFoam(foamParam, "QR-länk");
+    } else {
+      resetUI();
+    }
+  </script>
+</body>
+</html>
