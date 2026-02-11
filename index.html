@@ -10,7 +10,10 @@
     header h1 { margin:0; font-size:18px; font-weight:700; }
     header p { margin:6px 0 0; font-size:13px; opacity:.85; }
     main { max-width: 1080px; margin: 0 auto; padding: 16px; }
-    .card { background:#fff; border-radius:10px; padding:14px; box-shadow:0 2px 12px rgba(0,0,0,.06); }
+    .card { background:#fff; border-radius:10px; padding:14px; box-shadow:
+    0 0 0 2px rgba(255,255,255,.35),
+    0 6px 16px rgba(255,0,0,.18);
+}
     .row { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-start; }
     .col { flex: 1 1 380px; }
     .btn { display:inline-block; border:0; background:#111; color:#fff; padding:10px 12px; border-radius:8px; cursor:pointer; font-size:14px; }
@@ -19,13 +22,20 @@
     .muted { color:#666; font-size:13px; line-height:1.35; }
     .stage { position:relative; width:100%; }
     .stage img { width:100%; height:auto; border-radius:10px; display:block; }
-    .hotspot {
-      position:absolute; border:2px solid rgba(255,0,0,.55);
-      background: rgba(255,0,0,.08);
-      border-radius:10px; cursor:pointer;
+    .hotspot{
+  position:absolute;
+  border:2px solid rgba(255,0,0,.75);
+  background: rgba(255,0,0,.10);
+  border-radius:14px;
+  cursor:pointer;
     }
-    .hotspot:hover { border-color: rgba(255,0,0,.85); background: rgba(255,0,0,.12); }
-
+    .hotspot:hover{
+  background: rgba(255,0,0,.14);
+  border-color: rgba(255,0,0,.95);
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,.45),
+    0 10px 22px rgba(255,0,0,.25);
+}
     .pill { display:inline-block; font-size:12px; padding:4px 8px; border-radius:999px; background:#eee; color:#333; }
     .kpi { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
     .hr { height:1px; background:#eee; margin:12px 0; }
